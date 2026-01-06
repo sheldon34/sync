@@ -1,9 +1,11 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useAuth0, User as Auth0User } from '@auth0/auth0-react';
+import React, { createContext, useContext, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { AuthService } from '../services/api';
 
 interface AuthContextType {
-  user: Auth0User | undefined;
+  user: { username: string; roles: string[]; picture?: string } | undefined;
   login: () => void;
+  loginWithCredentials: (username: string, password: string) => Promise<void>;
+  signup: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -13,87 +15,102 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const TOKEN_STORAGE_KEY = 'dj_pimpim_access_token';
+
+type JwtPayload = {
+  sub?: string;
+  exp?: number;
+  roles?: string[];
+};
+
+const decodeBase64Url = (value: string): string => {
+  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+  return atob(padded);
+};
+
+const decodeJwtPayload = (token: string): JwtPayload | null => {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const json = decodeBase64Url(parts[1]);
+    const payload = JSON.parse(json) as JwtPayload;
+    return payload;
+  } catch {
+    return null;
+  }
+};
+
+const isTokenExpired = (token: string): boolean => {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return false;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return payload.exp <= nowSeconds;
+};
+
 export const AuthProvider = ({ children }: { children?: ReactNode }) => {
-  const { 
-    user, 
-    isAuthenticated, 
-    isLoading, 
-    loginWithRedirect, 
-    logout: auth0Logout,
-    getAccessTokenSilently 
-  } = useAuth0();
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = () => {
-    loginWithRedirect();
-  };
-
-  const logout = () => {
-    auth0Logout({ logoutParams: { returnTo: window.location.origin } });
-  };
-
-  const getAccessToken = async () => {
-    try {
-        return await getAccessTokenSilently();
-    } catch (error) {
-        console.error("Error getting token", error);
-        throw error;
+  useEffect(() => {
+    const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (stored && !isTokenExpired(stored)) {
+      setToken(stored);
+    } else if (stored) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
     }
-  };
+    setIsLoading(false);
+  }, []);
 
-  const readEnvString = (value: unknown): string | undefined => {
-    return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
-  };
+  const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setToken(null);
+  }, []);
 
-  const parseCsv = (value: string | undefined): string[] => {
-    if (!value) return [];
-    return value
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-  };
+  const login = useCallback(() => {
+    // HashRouter-friendly navigation
+    window.location.hash = '#/login';
+  }, []);
 
-  const getUserRoles = (auth0User: Auth0User | undefined): string[] => {
-    if (!auth0User) return [];
+  const loginWithCredentials = useCallback(async (username: string, password: string) => {
+    const accessToken = await AuthService.login(username, password);
+    localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+    setToken(accessToken);
+  }, []);
 
-    const userAny = auth0User as unknown as Record<string, unknown>;
+  const signup = useCallback(async (username: string, password: string) => {
+    await AuthService.register(username, password);
+  }, []);
 
-    const rolesClaimKey = readEnvString((import.meta as any).env?.VITE_AUTH0_ROLES_CLAIM);
-    const candidateKeys = [
-      rolesClaimKey,
-      'roles',
-      'role',
-      'http://schemas.djpimpim.com/roles',
-      'https://schemas.djpimpim.com/roles',
-      'https://djpimpim.com/roles',
-    ].filter(Boolean) as string[];
-
-    for (const key of candidateKeys) {
-      const value = userAny[key];
-      if (Array.isArray(value)) {
-        return value.filter((v): v is string => typeof v === 'string');
-      }
-      if (typeof value === 'string') {
-        return [value];
-      }
+  const getAccessToken = useCallback(async () => {
+    if (!token) throw new Error('Not authenticated');
+    if (isTokenExpired(token)) {
+      logout();
+      throw new Error('Session expired');
     }
+    return token;
+  }, [logout, token]);
 
-    return [];
-  };
+  const payload = useMemo(() => (token ? decodeJwtPayload(token) : null), [token]);
+  const roles = useMemo(() => {
+    const list = payload?.roles;
+    return Array.isArray(list) ? list.filter((r): r is string => typeof r === 'string') : [];
+  }, [payload]);
 
-  const roles = getUserRoles(user);
-  const isAdminByRole = roles.some((r) => r.toLowerCase() === 'admin');
+  const isAuthenticated = !!token && !isTokenExpired(token);
+  const isAdmin = isAuthenticated && roles.some((r) => {
+    const normalized = r.toLowerCase();
+    return normalized === 'admin' || normalized === 'role_admin';
+  });
 
-  const adminEmails = parseCsv(readEnvString((import.meta as any).env?.VITE_ADMIN_EMAILS));
-  const userEmail = (user as any)?.email as string | undefined;
-  const isAdminByEmail = !!userEmail && adminEmails.some((e) => e.toLowerCase() === userEmail.toLowerCase());
-
-  // Admin access requires explicit role claim or email allowlist entry.
-  const isAdmin = !!isAuthenticated && (isAdminByRole || isAdminByEmail);
+  const user = isAuthenticated && payload?.sub ? { username: payload.sub, roles } : undefined;
 
   return (
     <AuthContext.Provider value={{
       user,
       login,
+      loginWithCredentials,
+      signup,
       logout,
       isAuthenticated,
       isLoading,

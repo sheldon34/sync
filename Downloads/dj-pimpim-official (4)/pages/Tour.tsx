@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { EventService } from '../services/api';
 import { EventsDto, EventStatus } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { MapPin, Calendar, Ticket, Map } from 'lucide-react';
+import { MapPin, Ticket, Map } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
 

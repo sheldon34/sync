@@ -1,15 +1,32 @@
 import axios from 'axios';
 import { EventsDto, MerchandiseDto, TrackDto } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
+export const AuthService = {
+  login: async (username: string, password: string) => {
+    const response = await api.post<{ accessToken: string; tokenType?: string }>('/auth/login', {
+      username,
+      password,
+    });
+    return response.data.accessToken;
+  },
+  register: async (username: string, password: string) => {
+    const response = await api.post<string>('/auth/register', {
+      username,
+      password,
+    });
+    return response.data;
+  },
+};
+
 export const MerchandiseService = {
   getAll: async () => {
-    const response = await api.get<MerchandiseDto[]>('/merchandise/');
+    const response = await api.get<MerchandiseDto[]>('/merchandise/getAll');
     return response.data;
   },
   create: async (data: any, file: File | null, token: string) => {
@@ -38,7 +55,7 @@ export const MerchandiseService = {
 
 export const EventService = {
   getAll: async () => {
-    const response = await api.get<EventsDto[]>('/events');
+    const response = await api.get<EventsDto[]>('/events/getAll');
     return response.data;
   },
   create: async (data: any, file: File | null, token: string) => {
@@ -56,7 +73,7 @@ export const EventService = {
       formData.append('imageUrl', file);
     }
 
-    return api.post('/events/upload', formData, { 
+    return api.post('/events/create', formData, { 
       headers: { 
         'Content-Type': 'multipart/form-data',
         'Authorization': `Bearer ${token}`
@@ -72,7 +89,7 @@ export const EventService = {
 
 export const TrackService = {
   getAll: async () => {
-    const response = await api.get<TrackDto[]>('/track/');
+    const response = await api.get<TrackDto[]>('/track/getAll');
     return response.data;
   },
   create: async (track: TrackDto, token: string) => {

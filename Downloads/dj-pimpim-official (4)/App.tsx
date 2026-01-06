@@ -12,6 +12,8 @@ const Tour = React.lazy(() => import('./pages/Tour'));
 const Music = React.lazy(() => import('./pages/Music'));
 const Shop = React.lazy(() => import('./pages/Shop'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Signup = React.lazy(() => import('./pages/Signup'));
 
 const AdminRoute = ({ children }: { children: React.ReactElement }) => {
   const { isLoading, isAuthenticated, isAdmin, login } = useAuth();
@@ -42,6 +44,8 @@ function App() {
                 <Route path="/tour" element={<Tour />} />
                 <Route path="/music" element={<Music />} />
                 <Route path="/shop" element={<Shop />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
                 <Route path="/admin" element={
                   <AdminRoute>
                     <AdminDashboard />
