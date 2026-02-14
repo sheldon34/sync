@@ -50,6 +50,11 @@ export const Checkout: React.FC = () => {
       // Access env safely to avoid TS errors
       const env = (import.meta as any).env || {};
 
+      const publicBase = env.VITE_PUBLIC_BASE_URL || window.location.origin;
+      const callbackUrl = publicBase
+        ? new URL('/api/payhero/callback', publicBase).toString()
+        : null;
+
       try {
         window.PayHero.init({
           paymentUrl: env.VITE_PAYHERO_PAY_LINK || "https://app.payhero.co.ke/lipwa/4466",
@@ -65,7 +70,7 @@ export const Checkout: React.FC = () => {
           buttonColor: "#24B04B",
           successUrl: null, // We handle via JS event
           failedUrl: null,
-          callbackUrl: null
+          callbackUrl
         });
       } catch (err) {
         console.error("PayHero Init Error:", err);
