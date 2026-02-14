@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#f8fafc" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="YieldSync">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <title>YieldSync</title>
+    <link rel="manifest" href="/manifest.json">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- PayHero SDK -->
+    <script src="https://applet.payherokenya.com/cdn/button_sdk.js?v=3.1"></script>
+
+    <style>
+      :root {
+        --mpesa-green: #24B04B;
+        --dark-green: #1a8035;
+        --app-bg: #f8fafc;
+        /* Safe area variables */
+        --sat: env(safe-area-inset-top, 20px);
+        --sab: env(safe-area-inset-bottom, 20px);
+      }
+      
+      html, body {
+        height: 100%;
+        width: 100%;
+        overflow: hidden; /* Prevent body scroll, we scroll internal divs */
+        position: fixed; /* Prevent rubber-banding on iOS */
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--app-bg);
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-font-smoothing: antialiased;
+        color: #111827;
+      }
+
+      #root {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Allow text selection in inputs */
+      input, textarea {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      /* Mobile Utilities */
+      .pb-safe { padding-bottom: var(--sab); }
+      .pt-safe { padding-top: var(--sat); }
+      .h-safe-screen { height: calc(100vh - var(--sat) - var(--sab)); }
+      
+      .bg-mpesa { background-color: var(--mpesa-green); }
+      .text-mpesa { color: var(--mpesa-green); }
+      .border-mpesa { border-color: var(--mpesa-green); }
+      .font-digital { font-family: 'Share Tech Mono', monospace; }
+
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* App-like Page Transitions */
+      .page-container {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: calc(80px + var(--sab)); /* Space for Navbar */
+        background-color: var(--app-bg);
+      }
+
+      .glass {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(0,0,0,0.05);
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.3.1,react-dom@18.3.1",
+    "lucide-react": "https://esm.sh/lucide-react@0.363.0?deps=react@18.3.1",
+    "sonner": "https://esm.sh/sonner@1.4.3?deps=react@18.3.1,react-dom@18.3.1",
+    "react-qr-code": "https://esm.sh/react-qr-code@2.0.15?deps=react@18.3.1",
+    "html5-qrcode": "https://esm.sh/html5-qrcode@2.3.8",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.95.3"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
